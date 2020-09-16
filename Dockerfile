@@ -14,5 +14,4 @@ FROM alpine:${alpineVer}
 
 WORKDIR /var/app/
 COPY --from=builder /var/app/app .
-COPY templates ./templates
 ENTRYPOINT ["/var/app/app"]

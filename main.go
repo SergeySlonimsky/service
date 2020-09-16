@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,8 +15,8 @@ type User struct {
 	Email    string `json:"email"`
 }
 
-type jwtCustomClaims struct {
-	User
+type JwtCustomClaims struct {
+	User string `json:"user"`
 	jwt.StandardClaims
 }
 
@@ -30,7 +31,7 @@ func main() {
 
 	e := echo.New()
 	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		Claims:        &jwtCustomClaims{},
+		Claims:        &JwtCustomClaims{},
 		SigningKey:    key,
 		SigningMethod: "RS256",
 		TokenLookup:   "header:token",
@@ -38,10 +39,20 @@ func main() {
 	}))
 
 	e.GET("/", func(c echo.Context) error {
-		user := c.Get("user").(*jwt.Token)
-		claims := user.Claims.(*jwtCustomClaims)
-		log.Println(claims.Email)
-		return c.String(http.StatusOK, "Hello")
+		user, err := getJWTUser(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()} )
+		}
+		return c.JSON(http.StatusOK, user)
 	})
+
 	e.Logger.Fatal(e.Start(":1323"))
+}
+
+func getJWTUser(c echo.Context) (User, error) {
+	token := c.Get("user").(*jwt.Token)
+	claims := token.Claims.(*JwtCustomClaims)
+	user := User{}
+	err := json.Unmarshal([]byte(claims.User), &user)
+	return user, err
 }
