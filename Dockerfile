@@ -5,6 +5,7 @@ FROM golang:${golangVer}-alpine${alpineVer} as builder
 
 WORKDIR /var/app
 COPY . ./
+RUN go env -w GOPRIVATE=gitlab.com/project-mate
 RUN go mod download
 RUN go build -v -o app
 
